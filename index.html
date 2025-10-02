@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Legacy - Prototype MMO Spatial</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #gameCanvas {
+            display: block;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00FFFF;
+            text-shadow: 0 0 10px #00FFFF;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #00FFFF;
+            text-shadow: 0 0 10px #00FFFF;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 1px solid #00FFFF;
+            border-radius: 5px;
+            max-width: 300px;
+        }
+
+        #controls h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        #controls p {
+            margin: 5px 0;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(0, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #00FFFF;
+            margin: 0 2px;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00FFFF;
+            text-shadow: 0 0 20px #00FFFF;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 255, 255, 0.1);
+            border-top: 4px solid #00FFFF;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div>Dark Legacy</div>
+        <div class="spinner"></div>
+        <div>Chargement...</div>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <h2>Dark Legacy - Prototype</h2>
+        <p>Vie: <span id="health">100</span>/100</p>
+        <p>Vitesse: <span id="speed">0</span></p>
+        <p>Position: <span id="position">0, 0</span></p>
+    </div>
+
+    <div id="controls">
+        <h3>Contrôles (style Dark Orbit)</h3>
+        <p><span class="key">Clic gauche</span> : Se déplacer vers la position</p>
+        <p><span class="key">Maintenir clic</span> : Suivre la souris</p>
+        <p><span class="key">Clic droit</span> : Tir automatique ON/OFF</p>
+        <p><span class="key">Espace</span> : Tirer manuellement</p>
+        <p style="margin-top: 10px; font-size: 11px; opacity: 0.7;">
+            Mode: <span id="autofire-status">Tir manuel</span>
+        </p>
+    </div>
+
+    <!-- PixiJS -->
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.0.0/dist/pixi.min.js"></script>
+
+    <!-- Socket.io (pour le multijoueur futur) -->
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
+    <!-- Classes du jeu -->
+    <script src="client/Particle.js"></script>
+    <script src="client/Projectile.js"></script>
+    <script src="client/Ship.js"></script>
+    <script src="client/NetworkManager.js"></script>
+    <script src="client/Game.js"></script>
+
+    <!-- Script principal -->
+    <script>
+        // Variables globales
+        let game;
+        let player;
+
+        // Initialisation du jeu
+        async function init() {
+            // Créer l'instance du jeu
+            game = new Game();
+            await game.init();
+
+            // Créer le joueur
+            player = new Ship(
+                game.app.screen.width / 2,
+                game.app.screen.height / 2,
+                game,
+                true
+            );
+            game.addEntity(player);
+            game.localPlayer = player;
+
+            // Masquer l'écran de chargement
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+
+            // Démarrer la mise à jour de l'UI
+            setInterval(updateUI, 100);
+
+            console.log('Jeu initialisé !');
+            console.log('Cliquez pour vous déplacer, clic droit pour activer le tir automatique');
+
+            // Optionnel : Connecter au serveur multijoueur
+            // const networkManager = new NetworkManager(game);
+            // networkManager.connect('http://localhost:3000');
+            // game.setNetworkManager(networkManager);
+        }
+
+        // Mise à jour de l'interface
+        function updateUI() {
+            if (!player) return;
+
+            document.getElementById('health').textContent = Math.round(player.health);
+
+            const speed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+            document.getElementById('speed').textContent = Math.round(speed);
+
+            document.getElementById('position').textContent =
+                Math.round(player.x) + ', ' + Math.round(player.y);
+
+            // Mise à jour du statut du tir automatique
+            const autofireStatus = document.getElementById('autofire-status');
+            if (autofireStatus) {
+                autofireStatus.textContent = player.autoFire ? 'Tir automatique' : 'Tir manuel';
+                autofireStatus.style.color = player.autoFire ? '#00FF00' : '#00FFFF';
+            }
+        }
+
+        // Démarrer le jeu quand la page est chargée
+        window.addEventListener('load', () => {
+            init();
+        });
+
+        // Empêcher le défilement avec les flèches
+        window.addEventListener('keydown', (e) => {
+            if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+    </script>
+</body>
+</html>

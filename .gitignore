@@ -1,0 +1,50 @@
+# Dépendances
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Environnement
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs / IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Build / Distribution
+dist/
+build/
+*.min.js
+*.min.css
+
+# Fichiers temporaires
+tmp/
+temp/
+*.tmp
+
+# Assets volumineux (optionnel - décommenter si nécessaire)
+# public/assets/*.psd
+# public/assets/*.ai
+# *.png
+# *.jpg
+# *.jpeg
